@@ -15,12 +15,12 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: nvidia-device-plugin-daemonset
+  name: volcano-device-plugin
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      name: nvidia-device-plugin-ds
+      name: volcano-device-plugin
   updateStrategy:
     type: RollingUpdate
   template:
@@ -30,7 +30,7 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
-        name: nvidia-device-plugin-ds
+        name: volcano-device-plugin
     spec:
       tolerations:
       # This toleration is deprecated. Kept here for backward compatibility
@@ -46,8 +46,8 @@ spec:
       # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
       priorityClassName: "system-node-critical"
       containers:
-      - image: nvidia/k8s-device-plugin:latest
-        name: nvidia-device-plugin-ctr
+      - image: volcanosh/volcano-device-plugin:latest
+        name: volcano-device-plugin
         env:
           - name: NODE_NAME
             valueFrom:

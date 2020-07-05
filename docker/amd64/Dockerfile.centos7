@@ -26,11 +26,11 @@ RUN wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linu
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-WORKDIR /go/src/volcano.sh/k8s-device-plugin
+WORKDIR /go/src/volcano.sh/devices
 COPY . .
 
 RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
-    go build -ldflags="-s -w"
+    go build -ldflags="-s -w" -o volcano-device-plugin
 
 
 FROM centos:7
@@ -38,6 +38,6 @@ FROM centos:7
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
-COPY --from=build /go/bin/k8s-device-plugin /usr/bin/k8s-device-plugin
+COPY --from=build /go/src/volcano.sh/devices/volcano-device-plugin /usr/bin/volcano-device-plugin
 
-ENTRYPOINT ["k8s-device-plugin"]
+ENTRYPOINT ["volcano-device-plugin"]
