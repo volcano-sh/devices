@@ -85,6 +85,7 @@ kind: Pod
 metadata:
   name: gpu-pod1
 spec:
+  schedulerName: volcano
   containers:
     - name: cuda-container
       image: nvidia/cuda:9.0-devel
@@ -97,6 +98,7 @@ kind: Pod
 metadata:
   name: gpu-pod2
 spec:
+  schedulerName: volcano
   containers:
     - name: cuda-container
       image: nvidia/cuda:9.0-devel
@@ -140,7 +142,7 @@ $ kubectl create -f nvidia-device-plugin.yml
 # Issues and Contributing
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
-* You can report a bug by [filing a new issue](https://github.com/volcano-sh/k8s-device-plugin/issues/new)
+* You can report a bug by [filing a new issue](https://github.com/volcano-sh/devices)
 * You can contribute by opening a [pull request](https://help.github.com/articles/using-pull-requests/)
 
 ## Versioning

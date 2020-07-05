@@ -12,15 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: volcano-device-plugin
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: volcano-device-plugin
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes/status"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: volcano-device-plugin
+subjects:
+  - kind: ServiceAccount
+    name: volcano-device-plugin
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: volcano-device-plugin
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: nvidia-device-plugin-daemonset
+  name: volcano-device-plugin
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      name: nvidia-device-plugin-ds
+      name: volcano-device-plugin
   updateStrategy:
     type: RollingUpdate
   template:
@@ -30,7 +65,7 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
-        name: nvidia-device-plugin-ds
+        name: volcano-device-plugin
     spec:
       tolerations:
       # This toleration is deprecated. Kept here for backward compatibility
@@ -45,9 +80,10 @@ spec:
       # be rescheduled after a failure.
       # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
       priorityClassName: "system-node-critical"
+      serviceAccount: volcano-device-plugin
       containers:
-      - image: nvidia/k8s-device-plugin:latest
-        name: nvidia-device-plugin-ctr
+      - image: volcanosh/volcano-device-plugin:latest
+        name: volcano-device-plugin
         env:
           - name: NODE_NAME
             valueFrom:
