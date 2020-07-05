@@ -4,6 +4,7 @@ metadata:
   name: pod1
 spec:
   restartPolicy: OnFailure
+  schedulerName: volcano
   containers:
   - image: nvidia/cuda:10.1-base-ubuntu18.04
     name: pod1-ctr

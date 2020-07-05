@@ -85,6 +85,7 @@ kind: Pod
 metadata:
   name: gpu-pod1
 spec:
+  schedulerName: volcano
   containers:
     - name: cuda-container
       image: nvidia/cuda:9.0-devel
@@ -97,6 +98,7 @@ kind: Pod
 metadata:
   name: gpu-pod2
 spec:
+  schedulerName: volcano
   containers:
     - name: cuda-container
       image: nvidia/cuda:9.0-devel
