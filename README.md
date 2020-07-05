@@ -140,7 +140,7 @@ $ kubectl create -f nvidia-device-plugin.yml
 # Issues and Contributing
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
-* You can report a bug by [filing a new issue](https://github.com/volcano-sh/k8s-device-plugin/issues/new)
+* You can report a bug by [filing a new issue](https://github.com/volcano-sh/devices)
 * You can contribute by opening a [pull request](https://help.github.com/articles/using-pull-requests/)
 
 ## Versioning
