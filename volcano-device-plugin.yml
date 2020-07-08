@@ -82,7 +82,7 @@ spec:
       priorityClassName: "system-node-critical"
       serviceAccount: volcano-device-plugin
       containers:
-      - image: volcanosh/volcano-device-plugin:latest
+      - image: volcanosh/volcano-device-plugin:v1.0.0
         name: volcano-device-plugin
         env:
           - name: NODE_NAME
