@@ -19,7 +19,7 @@ package nvidia
 const (
 
 	// Extended gpu resource
-	VolcanoGPUResource = "volcano.sh/gpu-memory"
+	VolcanoGPUMemory = "volcano.sh/gpu-memory"
 	// Virtual GPU card number
 	VolcanoGPUNumber = "volcano.sh/gpu-number"
 
@@ -35,7 +35,7 @@ const (
 	// Allocated gpu memory
 	AllocatedGPUResource = "VOLCANO_GPU_ALLOCATED"
 	// Total gpu mem
-	TotalGPUResource = "VOLCANO_GPU_TOTAL"
+	TotalGPUMemory = "VOLCANO_GPU_MEMORY_TOTAL"
 	// NVIDIA visible devices
 	VisibleDevice = "NVIDIA_VISIBLE_DEVICES"
 )

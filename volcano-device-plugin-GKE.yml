@@ -80,24 +80,59 @@ spec:
       # be rescheduled after a failure.
       # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
       priorityClassName: "system-node-critical"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cloud.google.com/gke-accelerator
+                operator: Exists
       serviceAccount: volcano-device-plugin
       containers:
       - image: volcanosh/volcano-device-plugin:latest
-        #args: ["--gpu-strategy=number"]
         name: volcano-device-plugin
+        #args: ["--gpu-strategy=number"]
         env:
           - name: NODE_NAME
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+          - name: LD_LIBRARY_PATH
+            value: /usr/local/nvidia/lib64
         securityContext:
-          allowPrivilegeEscalation: false
+          #allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
+          privileged: true
         volumeMounts:
           - name: device-plugin
             mountPath: /var/lib/kubelet/device-plugins
+          - name: dev
+            mountPath: /dev
+          - name: nvidia
+            mountPath: /usr/local/nvidia
+          - name: pod-resources
+            mountPath: /var/lib/kubelet/pod-resources
+          - name: proc
+            mountPath: /proc
+          - name: nvidia-config
+            mountPath: /etc/nvidia
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: nvidia
+          hostPath:
+            path: /home/kubernetes/bin/nvidia
+        - name: pod-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: nvidia-config
+          hostPath:
+            path: /etc/nvidia

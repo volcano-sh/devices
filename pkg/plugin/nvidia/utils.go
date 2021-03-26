@@ -33,22 +33,19 @@ import (
 )
 
 // Container specific operations
-
-func IsGPURequiredContainer(c *v1.Container) bool {
-	vmemory := GetGPUResourceOfContainer(c)
-	return vmemory > 0
+func IsGPURequiredContainer(c *v1.Container, resourceName string) bool {
+	return GetGPUResourceOfContainer(c, v1.ResourceName(resourceName)) > 0
 }
 
-func GetGPUResourceOfContainer(container *v1.Container) uint {
+func GetGPUResourceOfContainer(container *v1.Container, resourceName v1.ResourceName) uint {
 	var count uint
-	if val, ok := container.Resources.Limits[VolcanoGPUResource]; ok {
+	if val, ok := container.Resources.Limits[resourceName]; ok {
 		count = uint(val.Value())
 	}
 	return count
 }
 
 // Device specific operations
-
 var (
 	gpuMemory uint
 )
@@ -112,8 +109,8 @@ func (s podSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func IsGPURequiredPod(pod *v1.Pod) bool {
-	return GetGPUResourceOfPod(pod, VolcanoGPUResource) > 0
+func IsGPURequiredPod(pod *v1.Pod, resourceName string) bool {
+	return GetGPUResourceOfPod(pod, v1.ResourceName(resourceName)) > 0
 }
 
 func IsGPUAssignedPod(pod *v1.Pod) bool {
@@ -172,20 +169,25 @@ func GetPredicateTimeFromPodAnnotation(pod *v1.Pod) uint64 {
 }
 
 // GetGPUIDFromPodAnnotation returns the ID of the GPU if allocated
-func GetGPUIDFromPodAnnotation(pod *v1.Pod) int {
+func GetGPUIDsFromPodAnnotation(pod *v1.Pod) []int {
 	if len(pod.Annotations) > 0 {
 		value, found := pod.Annotations[GPUIndex]
 		if found {
-			id, err := strconv.Atoi(value)
-			if err != nil {
-				klog.Error("invalid %s=%s", GPUIndex, value)
-				return -1
+			ids := strings.Split(value, ",")
+			idSlice := make([]int, len(ids))
+			for idx, id := range ids {
+				j, err := strconv.Atoi(id)
+				if err != nil {
+					klog.Errorf("invalid %s=%s", GPUIndex, value)
+					return nil
+				}
+				idSlice[idx] = j
 			}
-			return id
+			return idSlice
 		}
 	}
 
-	return -1
+	return nil
 }
 
 func UpdatePodAnnotations(kubeClient *kubernetes.Clientset, pod *v1.Pod) error {
