@@ -92,8 +92,8 @@ func GetDevices() ([]*pluginapi.Device, map[uint]string) {
 			migs, err := d.GetMigDevices()
 			check(err)
 			for j, mig := range migs {
-				// TODO: explain formula (based on device and mig numbers)
-				id =  i*uint(2) + i + uint(j)
+				// TODO: explain formula (based on device and mig numbers) i = device index, j = mig index
+				id =  i * uint(len(migs)) + uint(j)
 				deviceByIndex[id] = mig.UUID
 				if GetGPUMemory() == uint(0) {
 					SetGPUMemory(uint(*mig.Memory))
