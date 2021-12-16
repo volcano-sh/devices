@@ -63,6 +63,8 @@ func GenerateVirtualDeviceID(id uint, fakeCounter uint) string {
 
 func SetGPUMemory(raw uint) {
 	v := raw
+	// TODO Add cli flag for units
+	v = uint(math.Floor(float64(raw) / 100.0))
 	gpuMemory = v
 	log.Infof("set gpu memory: %d", gpuMemory)
 }
@@ -81,23 +83,49 @@ func GetDevices() ([]*pluginapi.Device, map[uint]string) {
 	for i := uint(0); i < n; i++ {
 		d, err := nvml.NewDevice(i)
 		check(err)
-		var id uint
-		_, err = fmt.Sscanf(d.Path, "/dev/nvidia%d", &id)
+		migEnabled, err := d.IsMigEnabled()
 		check(err)
-		deviceByIndex[id] = d.UUID
-		// TODO: Do we assume all cards are of same capacity
-		if GetGPUMemory() == uint(0) {
-			SetGPUMemory(uint(*d.Memory))
-		}
-		for j := uint(0); j < GetGPUMemory(); j++ {
-			fakeID := GenerateVirtualDeviceID(id, j)
-			virtualDevs = append(virtualDevs, &pluginapi.Device{
-				ID:     fakeID,
-				Health: pluginapi.Healthy,
-			})
+
+		var id uint
+		// TODO: Support only MigStrategySingle
+		if migEnabled {
+			migs, err := d.GetMigDevices()
+			check(err)
+			for j, mig := range migs {
+				// TODO: explain formula (based on device and mig numbers) i = device index, j = mig index
+				id =  i * uint(len(migs)) + uint(j)
+				deviceByIndex[id] = mig.UUID
+				if GetGPUMemory() == uint(0) {
+					SetGPUMemory(uint(*mig.Memory))
+				}
+				for j := uint(0); j < GetGPUMemory(); j++ {
+					fakeID := GenerateVirtualDeviceID(id, j)
+					virtualDevs = append(virtualDevs, &pluginapi.Device{
+						ID:     fakeID,
+						Health: pluginapi.Healthy,
+					})
+				}
+
+			}
+
+		} else {
+
+			_, err = fmt.Sscanf(d.Path, "/dev/nvidia%d", &id)
+			check(err)
+			deviceByIndex[id] = d.UUID
+			// TODO: Do we assume all cards are of same capacity
+			if GetGPUMemory() == uint(0) {
+				SetGPUMemory(uint(*d.Memory))
+			}
+			for j := uint(0); j < GetGPUMemory(); j++ {
+				fakeID := GenerateVirtualDeviceID(id, j)
+				virtualDevs = append(virtualDevs, &pluginapi.Device{
+					ID:     fakeID,
+					Health: pluginapi.Healthy,
+				})
+			}
 		}
 	}
-
 	return virtualDevs, deviceByIndex
 }
 

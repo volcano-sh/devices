@@ -29,11 +29,17 @@ import (
 	"volcano.sh/k8s-device-plugin/pkg/filewatcher"
 	"volcano.sh/k8s-device-plugin/pkg/plugin"
 	"volcano.sh/k8s-device-plugin/pkg/plugin/nvidia"
+	"github.com/NVIDIA/go-gpuallocator/gpuallocator"
 )
 
 func getAllPlugins() []plugin.DevicePlugin {
 	return []plugin.DevicePlugin{
-		nvidia.NewNvidiaDevicePlugin(),
+		nvidia.NewNvidiaDevicePlugin(
+			nvidia.VolcanoGPUResource,
+			nvidia.NewGpuDeviceManager(false),
+			nvidia.VisibleDevice,
+			gpuallocator.Policy(nil),
+			pluginapi.DevicePluginPath + "volcano.sock"),
 	}
 }
 

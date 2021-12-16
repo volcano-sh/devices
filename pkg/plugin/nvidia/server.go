@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"github.com/NVIDIA/go-gpuallocator/gpuallocator"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
@@ -41,10 +42,12 @@ type NvidiaDevicePlugin struct {
 	socket       string
 
 	server *grpc.Server
+	deviceListEnvvar string
+	allocatePolicy   gpuallocator.Policy
 	// Physical gpu card
 	physicalDevices []*Device
 	health          chan *Device
-	stop            chan struct{}
+	stop            chan interface{}
 
 	// Virtual devices
 	virtualDevices []*pluginapi.Device
@@ -54,7 +57,7 @@ type NvidiaDevicePlugin struct {
 }
 
 // NewNvidiaDevicePlugin returns an initialized NvidiaDevicePlugin
-func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
+func NewNvidiaDevicePlugin(resourceName string, resourceManager ResourceManager, deviceListEnvvar string, allocatePolicy gpuallocator.Policy, socket string) *NvidiaDevicePlugin {
 	log.Println("Loading NVML")
 	if err := nvml.Init(); err != nil {
 		log.Printf("Failed to initialize NVML: %s.", err)
@@ -69,9 +72,11 @@ func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
 	}
 
 	return &NvidiaDevicePlugin{
-		ResourceManager: NewGpuDeviceManager(),
-		resourceName:    VolcanoGPUResource,
-		socket:          pluginapi.DevicePluginPath + "volcano.sock",
+		ResourceManager:  resourceManager,
+		deviceListEnvvar: deviceListEnvvar,
+		resourceName:     resourceName,
+		socket:           socket,
+		allocatePolicy:   allocatePolicy,
 		kubeInteractor:  ki,
 
 		// These will be reinitialized every
@@ -89,7 +94,7 @@ func (m *NvidiaDevicePlugin) initialize() {
 	m.physicalDevices = m.Devices()
 	m.server = grpc.NewServer([]grpc.ServerOption{}...)
 	m.health = make(chan *Device)
-	m.stop = make(chan struct{})
+	m.stop = make(chan interface{})
 
 	m.virtualDevices, m.devicesByIndex = GetDevices()
 }
@@ -122,7 +127,7 @@ func (m *NvidiaDevicePlugin) Name() string {
 func (m *NvidiaDevicePlugin) Start() error {
 	m.initialize()
 	// must be called after initialize
-	if err := m.kubeInteractor.PatchGPUResourceOnNode(len(m.physicalDevices)); err != nil {
+	if err := m.kubeInteractor.PatchGPUResourceOnNode(len(m.devicesByIndex)); err != nil {
 		log.Printf("failed to patch gpu resource: %v", err)
 		m.cleanup()
 		return fmt.Errorf("failed to patch gpu resource: %v", err)
@@ -314,7 +319,7 @@ Allocate:
 		klog.Warningf("Failed to get the gpu id for pod %s/%s", candidatePod.Namespace, candidatePod.Name)
 		return nil, fmt.Errorf("failed to find gpu id")
 	}
-	_, exist := m.GetDeviceNameByIndex(uint(id))
+	deviceName, exist := m.GetDeviceNameByIndex(uint(id))
 	if !exist {
 		klog.Warningf("Failed to find the dev for pod %s/%s because it's not able to find dev with index %d",
 			candidatePod.Namespace, candidatePod.Name, id)
@@ -325,7 +330,7 @@ Allocate:
 		reqGPU := len(req.DevicesIDs)
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
-				VisibleDevice:        fmt.Sprintf("%d", id),
+				VisibleDevice:        fmt.Sprintf("%s", deviceName),
 				AllocatedGPUResource: fmt.Sprintf("%d", reqGPU),
 				TotalGPUResource:     fmt.Sprintf("%d", gpuMemory),
 			},
@@ -361,4 +366,34 @@ func (m *NvidiaDevicePlugin) dial(unixSocketPath string, timeout time.Duration) 
 	}
 
 	return c, nil
+}
+
+// GetPreferredAllocation returns the preferred allocation from the set of devices specified in the request
+func (m *NvidiaDevicePlugin) GetPreferredAllocation(ctx context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+	response := &pluginapi.PreferredAllocationResponse{}
+	for _, req := range r.ContainerRequests {
+		available, err := gpuallocator.NewDevicesFrom(req.AvailableDeviceIDs)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to retrieve list of available devices: %v", err)
+		}
+
+		required, err := gpuallocator.NewDevicesFrom(req.MustIncludeDeviceIDs)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to retrieve list of required devices: %v", err)
+		}
+
+		allocated := m.allocatePolicy.Allocate(available, required, int(req.AllocationSize))
+
+		var deviceIds []string
+		for _, device := range allocated {
+			deviceIds = append(deviceIds, device.UUID)
+		}
+
+		resp := &pluginapi.ContainerPreferredAllocationResponse{
+			DeviceIDs: deviceIds,
+		}
+
+		response.ContainerResponses = append(response.ContainerResponses, resp)
+	}
+	return response, nil
 }
