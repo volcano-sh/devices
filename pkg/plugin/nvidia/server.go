@@ -49,12 +49,13 @@ type NvidiaDevicePlugin struct {
 	// Virtual devices
 	virtualDevices []*pluginapi.Device
 	devicesByIndex map[uint]string
+	factor         uint
 
 	kubeInteractor *KubeInteractor
 }
 
 // NewNvidiaDevicePlugin returns an initialized NvidiaDevicePlugin
-func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
+func NewNvidiaDevicePlugin(factor uint) *NvidiaDevicePlugin {
 	log.Println("Loading NVML")
 	if err := nvml.Init(); err != nil {
 		log.Printf("Failed to initialize NVML: %s.", err)
@@ -82,6 +83,7 @@ func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
 		stop:            nil,
 		virtualDevices:  nil,
 		devicesByIndex:  nil,
+		factor:          factor,
 	}
 }
 
@@ -91,7 +93,7 @@ func (m *NvidiaDevicePlugin) initialize() {
 	m.health = make(chan *Device)
 	m.stop = make(chan struct{})
 
-	m.virtualDevices, m.devicesByIndex = GetDevices()
+	m.virtualDevices, m.devicesByIndex = GetDevices(m.factor)
 }
 
 func (m *NvidiaDevicePlugin) cleanup() {
@@ -328,6 +330,7 @@ Allocate:
 				VisibleDevice:        fmt.Sprintf("%d", id),
 				AllocatedGPUResource: fmt.Sprintf("%d", reqGPU),
 				TotalGPUResource:     fmt.Sprintf("%d", gpuMemory),
+				GPUFactor:            fmt.Sprintf("%d", m.factor),
 			},
 		}
 		responses.ContainerResponses = append(responses.ContainerResponses, &response)

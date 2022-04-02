@@ -35,4 +35,6 @@ const (
 	TotalGPUResource = "VOLCANO_GPU_TOTAL"
 	// NVIDIA visible devices
 	VisibleDevice = "NVIDIA_VISIBLE_DEVICES"
+	// GPU factor
+	GPUFactor = "VOLCANO_GPU_FACTOR"
 )
