@@ -35,4 +35,11 @@ const (
 	TotalGPUResource = "VOLCANO_GPU_TOTAL"
 	// NVIDIA visible devices
 	VisibleDevice = "NVIDIA_VISIBLE_DEVICES"
+
+	// DefaultMaxRecvMsgSize defines the default maximum message size for
+	// receiving protobufs passed over the GRPC API.
+	DefaultMaxRecvMsgSize = 16 << 20
+	// DefaultMaxSendMsgSize defines the default maximum message size for
+	// sending protobufs passed over the GRPC API.
+	DefaultMaxSendMsgSize = 16 << 20
 )
