@@ -100,7 +100,7 @@ func (ki *KubeInteractor) PatchGPUResourceOnNode(gpuCount int) error {
 		var node *v1.Node
 		node, err = ki.clientset.CoreV1().Nodes().Get(context.TODO(), ki.nodeName, metav1.GetOptions{})
 		if err != nil {
-			klog.Info("failed to get node %s: %v", ki.nodeName, err)
+			klog.V(4).Infof("failed to get node %s: %v", ki.nodeName, err)
 			return false, nil
 		}
 
@@ -109,7 +109,7 @@ func (ki *KubeInteractor) PatchGPUResourceOnNode(gpuCount int) error {
 		newNode.Status.Allocatable[VolcanoGPUNumber] = *resource.NewQuantity(int64(gpuCount), resource.DecimalSI)
 		_, _, err = nodeutil.PatchNodeStatus(ki.clientset.CoreV1(), types.NodeName(ki.nodeName), node, newNode)
 		if err != nil {
-			klog.Infof("failed to patch volcano gpu resource: %v", err)
+			klog.V(4).Infof("failed to patch volcano gpu resource: %v", err)
 			return false, nil
 		}
 		return true, nil
@@ -136,7 +136,7 @@ func (ki *KubeInteractor) PatchUnhealthyGPUListOnNode(devices []*Device) error {
 		var node *v1.Node
 		node, err = ki.clientset.CoreV1().Nodes().Get(context.TODO(), ki.nodeName, metav1.GetOptions{})
 		if err != nil {
-			klog.Info("failed to get node %s: %v", ki.nodeName, err)
+			klog.V(4).Infof("failed to get node %s: %v", ki.nodeName, err)
 			return false, nil
 		}
 
@@ -148,7 +148,7 @@ func (ki *KubeInteractor) PatchUnhealthyGPUListOnNode(devices []*Device) error {
 		}
 		_, _, err = nodeutil.PatchNodeStatus(ki.clientset.CoreV1(), types.NodeName(ki.nodeName), node, newNode)
 		if err != nil {
-			klog.Infof("failed to patch volcano unhealthy gpu list %s: %v", unhealthyGPUsStr, err)
+			klog.V(4).Infof("failed to patch volcano unhealthy gpu list %s: %v", unhealthyGPUsStr, err)
 			return false, nil
 		}
 		return true, nil
