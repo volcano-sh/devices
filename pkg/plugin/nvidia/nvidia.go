@@ -17,12 +17,14 @@
 package nvidia
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 
+	"k8s.io/klog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -33,7 +35,8 @@ const (
 
 type Device struct {
 	pluginapi.Device
-	Path string
+	Path  string
+	Index uint
 }
 
 type ResourceManager interface {
@@ -76,6 +79,10 @@ func buildDevice(d *nvml.Device) *Device {
 	dev.ID = d.UUID
 	dev.Health = pluginapi.Healthy
 	dev.Path = d.Path
+
+	_, err := fmt.Sscanf(d.Path, "/dev/nvidia%d", &dev.Index)
+	check(err)
+
 	if d.CPUAffinity != nil {
 		dev.Topology = &pluginapi.TopologyInfo{
 			Nodes: []*pluginapi.NUMANode{
@@ -110,6 +117,12 @@ func checkHealth(stop <-chan struct{}, devices []*Device, unhealthy chan<- *Devi
 		check(err)
 	}
 
+	firstTime := true
+	ki, err := NewKubeInteractor()
+	if err != nil {
+		klog.Fatalf("cannot create kube interactor. %v", err)
+	}
+
 	for {
 		select {
 		case <-stop:
@@ -119,6 +132,11 @@ func checkHealth(stop <-chan struct{}, devices []*Device, unhealthy chan<- *Devi
 
 		e, err := nvml.WaitForEvent(eventSet, 5000)
 		if err != nil && e.Etype != nvml.XidCriticalError {
+			if firstTime {
+				// reset unhealthy gpu list if all devices healthy
+				ki.PatchUnhealthyGPUListOnNode(devices)
+				firstTime = false
+			}
 			continue
 		}
 
@@ -126,6 +144,11 @@ func checkHealth(stop <-chan struct{}, devices []*Device, unhealthy chan<- *Devi
 		// http://docs.nvidia.com/deploy/xid-errors/index.html#topic_4
 		// Application errors: the GPU should still be healthy
 		if e.Edata == 31 || e.Edata == 43 || e.Edata == 45 {
+			if firstTime {
+				// reset unhealthy gpu list if all devices healthy
+				ki.PatchUnhealthyGPUListOnNode(devices)
+				firstTime = false
+			}
 			continue
 		}
 

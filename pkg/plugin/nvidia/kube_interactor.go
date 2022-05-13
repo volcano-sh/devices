@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	nodeutil "k8s.io/kubernetes/pkg/util/node"
 )
 
@@ -108,6 +110,45 @@ func (ki *KubeInteractor) PatchGPUResourceOnNode(gpuCount int) error {
 		_, _, err = nodeutil.PatchNodeStatus(ki.clientset.CoreV1(), types.NodeName(ki.nodeName), node, newNode)
 		if err != nil {
 			klog.Infof("failed to patch volcano gpu resource: %v", err)
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
+}
+
+func (ki *KubeInteractor) PatchUnhealthyGPUListOnNode(devices []*Device) error {
+	var err error
+	unhealthyGPUsStr := ""
+	unhealthyGPUs := []string{}
+
+	for i := range devices {
+		if devices[i].Health == pluginapi.Unhealthy {
+			unhealthyGPUs = append(unhealthyGPUs, fmt.Sprintf("%d", devices[i].Index))
+		}
+	}
+
+	if len(unhealthyGPUs) > 0 {
+		unhealthyGPUsStr = strings.Join(unhealthyGPUs, ",")
+	}
+
+	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
+		var node *v1.Node
+		node, err = ki.clientset.CoreV1().Nodes().Get(context.TODO(), ki.nodeName, metav1.GetOptions{})
+		if err != nil {
+			klog.Info("failed to get node %s: %v", ki.nodeName, err)
+			return false, nil
+		}
+
+		newNode := node.DeepCopy()
+		if unhealthyGPUsStr != "" {
+			newNode.Annotations[UnhealthyGPUIDs] = unhealthyGPUsStr
+		} else {
+			delete(newNode.Annotations, UnhealthyGPUIDs)
+		}
+		_, _, err = nodeutil.PatchNodeStatus(ki.clientset.CoreV1(), types.NodeName(ki.nodeName), node, newNode)
+		if err != nil {
+			klog.Infof("failed to patch volcano unhealthy gpu list %s: %v", unhealthyGPUsStr, err)
 			return false, nil
 		}
 		return true, nil

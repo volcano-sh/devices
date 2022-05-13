@@ -255,9 +255,16 @@ func (m *NvidiaDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Device
 			return nil
 		case d := <-m.health:
 			// FIXME: there is no way to recover from the Unhealthy state.
+			isChange := false
+			if d.Health != pluginapi.Unhealthy {
+				isChange = true
+			}
 			d.Health = pluginapi.Unhealthy
 			log.Printf("'%s' device marked unhealthy: %s", m.resourceName, d.ID)
 			s.Send(&pluginapi.ListAndWatchResponse{Devices: m.virtualDevices})
+			if isChange {
+				m.kubeInteractor.PatchUnhealthyGPUListOnNode(m.physicalDevices)
+			}
 		}
 	}
 }
