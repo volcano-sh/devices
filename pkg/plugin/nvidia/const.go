@@ -28,6 +28,9 @@ const (
 	GPUAssigned   = "volcano.sh/gpu-assigned"
 	GPUIndex      = "volcano.sh/gpu-index"
 
+	// UnhealthyGPUIDs list of unhealthy gpu ids
+	UnhealthyGPUIDs = "volcano.sh/gpu-unhealthy-ids"
+
 	// Container env
 	// Allocated gpu memory
 	AllocatedGPUResource = "VOLCANO_GPU_ALLOCATED"
