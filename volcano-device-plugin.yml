@@ -84,6 +84,7 @@ spec:
       containers:
       - image: volcanosh/volcano-device-plugin:latest
         name: volcano-device-plugin
+        args: ["-factor", "1"]
         env:
           - name: NODE_NAME
             valueFrom:

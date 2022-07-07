@@ -84,7 +84,7 @@ func GetDevices() ([]*pluginapi.Device, map[uint]string) {
 		if GetGPUMemory() == uint(0) {
 			SetGPUMemory(uint(*d.Memory))
 		}
-		for j := uint(0); j < GetGPUMemory(); j++ {
+		for j := uint(0); j < GetGPUMemory()/factor; j++ {
 			fakeID := GenerateVirtualDeviceID(id, j)
 			virtualDevs = append(virtualDevs, &pluginapi.Device{
 				ID:     fakeID,

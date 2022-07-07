@@ -31,14 +31,23 @@ import (
 	"volcano.sh/k8s-device-plugin/pkg/plugin/nvidia"
 )
 
+var deviceFactor *uint
+
+func init() {
+	deviceFactor = flag.Uint("factor", 1, "gpu virtual device's division factor")
+}
+
 func getAllPlugins() []plugin.DevicePlugin {
 	return []plugin.DevicePlugin{
-		nvidia.NewNvidiaDevicePlugin(),
+		nvidia.NewNvidiaDevicePlugin(*deviceFactor),
 	}
 }
 
 func main() {
 	flag.Parse()
+	if *deviceFactor <= 0 {
+		*deviceFactor = 1
+	}
 
 	log.Println("Starting file watcher.")
 	watcher, err := filewatcher.NewFileWatcher(pluginapi.DevicePluginPath)
