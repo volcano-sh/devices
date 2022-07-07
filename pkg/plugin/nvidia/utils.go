@@ -36,11 +36,7 @@ import (
 
 func IsGPURequiredContainer(c *v1.Container) bool {
 	vmemory := GetGPUResourceOfContainer(c)
-	if vmemory == 0 {
-		return false
-	}
-
-	return true
+	return vmemory > 0
 }
 
 func GetGPUResourceOfContainer(container *v1.Container) uint {
@@ -62,8 +58,7 @@ func GenerateVirtualDeviceID(id uint, fakeCounter uint) string {
 }
 
 func SetGPUMemory(raw uint) {
-	v := raw
-	gpuMemory = v
+	gpuMemory = raw
 	log.Infof("set gpu memory: %d", gpuMemory)
 }
 
@@ -118,14 +113,7 @@ func (s podSlice) Swap(i, j int) {
 }
 
 func IsGPURequiredPod(pod *v1.Pod) bool {
-
-	vmemory := GetGPUResourceOfPod(pod, VolcanoGPUResource)
-
-	if vmemory <= 0 {
-		return false
-	}
-
-	return true
+	return GetGPUResourceOfPod(pod, VolcanoGPUResource) > 0
 }
 
 func IsGPUAssignedPod(pod *v1.Pod) bool {
@@ -158,10 +146,7 @@ func IsShouldDeletePod(pod *v1.Pod) bool {
 			return true
 		}
 	}
-	if pod.Status.Reason == "UnexpectedAdmissionError" {
-		return true
-	}
-	return false
+	return pod.Status.Reason == "UnexpectedAdmissionError"
 }
 
 func GetGPUResourceOfPod(pod *v1.Pod, resourceName v1.ResourceName) uint {
