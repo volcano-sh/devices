@@ -17,30 +17,86 @@
 package main
 
 import (
-	"flag"
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/fsnotify/fsnotify"
+	cli "github.com/urfave/cli/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
+	apis "volcano.sh/k8s-device-plugin/pkg/apis"
 	"volcano.sh/k8s-device-plugin/pkg/filewatcher"
 	"volcano.sh/k8s-device-plugin/pkg/plugin"
 	"volcano.sh/k8s-device-plugin/pkg/plugin/nvidia"
 )
 
-func getAllPlugins() []plugin.DevicePlugin {
+func loadConfig(c *cli.Context, flags []cli.Flag) (*apis.Config, error) {
+	config, err := apis.NewConfig(c, flags)
+	if err != nil {
+		return nil, fmt.Errorf("unable to finalize config: %v", err)
+	}
+	return config, nil
+}
+
+func getAllPlugins(c *cli.Context, flags []cli.Flag) ([]plugin.DevicePlugin, error) {
+	// Load the configuration file
+	log.Println("Loading configuration.")
+	config, err := loadConfig(c, flags)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load config: %v", err)
+	}
+
+	// Print the config to the output.
+	configJSON, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal config to JSON: %v", err)
+	}
+	log.Printf("\nRunning with config:\n%v", string(configJSON))
+
 	return []plugin.DevicePlugin{
-		nvidia.NewNvidiaDevicePlugin(),
+		nvidia.NewNvidiaDevicePlugin(config),
+	}, nil
+}
+
+var version string
+
+func main() {
+	var configFile string
+
+	c := cli.NewApp()
+	c.Version = version
+	c.Action = func(ctx *cli.Context) error {
+		return start(ctx, c.Flags)
+	}
+
+	c.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "gpu-strategy",
+			Value:   "share",
+			Usage:   "the default strategy is using shared GPU devices while using 'number' meaning using GPUs individually. [number| share]",
+			EnvVars: []string{"GPU_STRATEGY"},
+		},
+		&cli.StringFlag{
+			Name:        "config-file",
+			Usage:       "the path to a config file as an alternative to command line options or environment variables",
+			Destination: &configFile,
+			EnvVars:     []string{"CONFIG_FILE"},
+		},
+	}
+
+	err := c.Run(os.Args)
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Printf("Error: %v", err)
+		os.Exit(1)
 	}
 }
 
-func main() {
-	flag.Parse()
-
-	log.Println("Starting file watcher.")
+func start(c *cli.Context, flags []cli.Flag) error {
 	watcher, err := filewatcher.NewFileWatcher(pluginapi.DevicePluginPath)
 	if err != nil {
 		log.Printf("Failed to created file watcher: %v", err)
@@ -48,7 +104,11 @@ func main() {
 	}
 
 	log.Println("Retrieving plugins.")
-	plugins := getAllPlugins()
+	plugins, err := getAllPlugins(c, flags)
+	if err != nil {
+		log.Printf("Failed to retrieving plugins: %v", err)
+		os.Exit(1)
+	}
 
 	log.Println("Starting OS signal watcher.")
 	sigCh := make(chan os.Signal, 1)

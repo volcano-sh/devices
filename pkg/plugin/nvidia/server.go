@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
@@ -32,6 +33,7 @@ import (
 
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	apis "volcano.sh/k8s-device-plugin/pkg/apis"
 )
 
 // NvidiaDevicePlugin implements the Kubernetes device plugin API
@@ -51,10 +53,11 @@ type NvidiaDevicePlugin struct {
 	devicesByIndex map[uint]string
 
 	kubeInteractor *KubeInteractor
+	config         *apis.Config
 }
 
 // NewNvidiaDevicePlugin returns an initialized NvidiaDevicePlugin
-func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
+func NewNvidiaDevicePlugin(config *apis.Config) *NvidiaDevicePlugin {
 	log.Println("Loading NVML")
 	if err := nvml.Init(); err != nil {
 		log.Printf("Failed to initialize NVML: %s.", err)
@@ -70,12 +73,13 @@ func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
 
 	return &NvidiaDevicePlugin{
 		ResourceManager: NewGpuDeviceManager(),
-		resourceName:    VolcanoGPUResource,
 		socket:          pluginapi.DevicePluginPath + "volcano.sock",
 		kubeInteractor:  ki,
+		config:          config,
 
 		// These will be reinitialized every
 		// time the plugin server is restarted.
+		resourceName:    VolcanoGPUNumber,
 		physicalDevices: nil,
 		server:          nil,
 		health:          nil,
@@ -86,6 +90,7 @@ func NewNvidiaDevicePlugin() *NvidiaDevicePlugin {
 }
 
 func (m *NvidiaDevicePlugin) initialize() {
+	m.resourceName = m.GetResourceNameFromConfig()
 	m.physicalDevices = m.Devices()
 	m.server = grpc.NewServer([]grpc.ServerOption{}...)
 	m.health = make(chan *Device)
@@ -104,6 +109,14 @@ func (m *NvidiaDevicePlugin) cleanup() {
 	m.devicesByIndex = nil
 }
 
+func (m *NvidiaDevicePlugin) GetResourceNameFromConfig() string {
+	if m.config.Flags.GPUStrategy == "share" {
+		return VolcanoGPUMemory
+	} else {
+		return VolcanoGPUNumber
+	}
+}
+
 func (m *NvidiaDevicePlugin) GetDeviceNameByIndex(index uint) (name string, found bool) {
 	if m.devicesByIndex != nil {
 		name, ok := m.devicesByIndex[index]
@@ -114,7 +127,7 @@ func (m *NvidiaDevicePlugin) GetDeviceNameByIndex(index uint) (name string, foun
 
 // Name returns the name of the plugin
 func (m *NvidiaDevicePlugin) Name() string {
-	return "Volcano-GPU-Sharing"
+	return "Volcano-GPU-Plugin"
 }
 
 // Start starts the gRPC server, registers the device plugin with the Kubelet,
@@ -122,10 +135,13 @@ func (m *NvidiaDevicePlugin) Name() string {
 func (m *NvidiaDevicePlugin) Start() error {
 	m.initialize()
 	// must be called after initialize
-	if err := m.kubeInteractor.PatchGPUResourceOnNode(len(m.physicalDevices)); err != nil {
-		log.Printf("failed to patch gpu resource: %v", err)
-		m.cleanup()
-		return fmt.Errorf("failed to patch gpu resource: %v", err)
+	//gpustrategy=share patch number
+	if m.resourceName == VolcanoGPUMemory {
+		if err := m.kubeInteractor.PatchGPUResourceOnNode(len(m.physicalDevices)); err != nil {
+			log.Printf("failed to patch gpu resource: %v", err)
+			m.cleanup()
+			return fmt.Errorf("failed to patch gpu resource: %v", err)
+		}
 	}
 
 	err := m.Serve()
@@ -244,29 +260,58 @@ func (m *NvidiaDevicePlugin) GetDevicePluginOptions(context.Context, *pluginapi.
 
 // ListAndWatch lists devices and update that list according to the health status
 func (m *NvidiaDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
-	err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.virtualDevices})
-	if err != nil {
-		log.Fatalf("failed sending devices %d: %v", len(m.virtualDevices), err)
-	}
+	if m.resourceName == VolcanoGPUMemory {
+		err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.virtualDevices})
+		if err != nil {
+			log.Fatalf("failed sending devices %d: %v", len(m.virtualDevices), err)
+		}
 
-	for {
-		select {
-		case <-m.stop:
-			return nil
-		case d := <-m.health:
-			// FIXME: there is no way to recover from the Unhealthy state.
-			isChange := false
-			if d.Health != pluginapi.Unhealthy {
-				isChange = true
-			}
-			d.Health = pluginapi.Unhealthy
-			log.Printf("'%s' device marked unhealthy: %s", m.resourceName, d.ID)
-			s.Send(&pluginapi.ListAndWatchResponse{Devices: m.virtualDevices})
-			if isChange {
-				m.kubeInteractor.PatchUnhealthyGPUListOnNode(m.physicalDevices)
+		for {
+			select {
+			case <-m.stop:
+				return nil
+			case d := <-m.health:
+				// FIXME: there is no way to recover from the Unhealthy state.
+				isChange := false
+				if d.Health != pluginapi.Unhealthy {
+					isChange = true
+				}
+				d.Health = pluginapi.Unhealthy
+				log.Printf("'%s' device marked unhealthy: %s", m.resourceName, d.ID)
+				s.Send(&pluginapi.ListAndWatchResponse{Devices: m.virtualDevices})
+				if isChange {
+					m.kubeInteractor.PatchUnhealthyGPUListOnNode(m.physicalDevices)
+				}
 			}
 		}
+
+	} else {
+		err := s.Send(&pluginapi.ListAndWatchResponse{Devices: m.GetPluginDevices(m.physicalDevices)})
+		if err != nil {
+			log.Fatalf("failed sending devices %d: %v", len(m.virtualDevices), err)
+		}
+
+		for {
+			select {
+			case <-m.stop:
+				return nil
+			case d := <-m.health:
+				// FIXME: there is no way to recover from the Unhealthy state.
+				isChange := false
+				if d.Health != pluginapi.Unhealthy {
+					isChange = true
+				}
+				d.Health = pluginapi.Unhealthy
+				log.Printf("'%s' device marked unhealthy: %s", m.resourceName, d.ID)
+				s.Send(&pluginapi.ListAndWatchResponse{Devices: m.GetPluginDevices(m.physicalDevices)})
+				if isChange {
+					m.kubeInteractor.PatchUnhealthyGPUListOnNode(m.physicalDevices)
+				}
+			}
+		}
+
 	}
+
 }
 
 // TODO(@hzxuzhonghu): This is called per container by kubelet, we do not handle multi containers pod case correctly.
@@ -279,6 +324,8 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 
 	responses := pluginapi.AllocateResponse{}
 
+	//kubelet will launch Allocate for each container, though the argument is containers list, it only contains one container.
+	//That's why firstContainerReq := reqs.ContainerRequests[0]
 	firstContainerReq := reqs.ContainerRequests[0]
 	firstContainerReqDeviceCount := uint(len(firstContainerReq.DevicesIDs))
 
@@ -289,7 +336,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 	for _, pod := range pendingPods {
 		current := pod
-		if IsGPURequiredPod(&current) && !IsGPUAssignedPod(&current) && !IsShouldDeletePod(&current) {
+		if IsGPURequiredPod(&current, m.resourceName) && !IsGPUAssignedPod(&current) && !IsShouldDeletePod(&current) {
 			availablePods = append(availablePods, &current)
 		}
 	}
@@ -299,14 +346,21 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	var candidatePod *v1.Pod
 	for _, pod := range availablePods {
 		for i, c := range pod.Spec.Containers {
-			if !IsGPURequiredContainer(&c) {
+			if !IsGPURequiredContainer(&c, m.resourceName) {
 				continue
 			}
-
-			if GetGPUResourceOfContainer(&pod.Spec.Containers[i]) == firstContainerReqDeviceCount {
-				klog.Infof("Got candidate Pod %s(%s), the device count is: %d", pod.UID, c.Name, firstContainerReqDeviceCount)
-				candidatePod = pod
-				goto Allocate
+			if m.resourceName == VolcanoGPUMemory {
+				if GetGPUResourceOfContainer(&pod.Spec.Containers[i], VolcanoGPUMemory) == firstContainerReqDeviceCount {
+					klog.Infof("Got candidate Pod %s(%s), the device count is: %d", pod.UID, c.Name, firstContainerReqDeviceCount)
+					candidatePod = pod
+					goto Allocate
+				}
+			} else {
+				if GetGPUResourceOfContainer(&pod.Spec.Containers[i], VolcanoGPUNumber) == firstContainerReqDeviceCount {
+					klog.Infof("Got candidate Pod %s(%s), the device count is: %d", pod.UID, c.Name, firstContainerReqDeviceCount)
+					candidatePod = pod
+					goto Allocate
+				}
 			}
 		}
 	}
@@ -316,25 +370,27 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 
 Allocate:
-	id := GetGPUIDFromPodAnnotation(candidatePod)
-	if id < 0 {
-		klog.Warningf("Failed to get the gpu id for pod %s/%s", candidatePod.Namespace, candidatePod.Name)
-		return nil, fmt.Errorf("failed to find gpu id")
+	ids := GetGPUIDsFromPodAnnotation(candidatePod)
+	if ids == nil {
+		klog.Warningf("Failed to get the gpu ids for pod %s/%s", candidatePod.Namespace, candidatePod.Name)
+		return nil, fmt.Errorf("failed to find gpu ids")
 	}
-	_, exist := m.GetDeviceNameByIndex(uint(id))
-	if !exist {
-		klog.Warningf("Failed to find the dev for pod %s/%s because it's not able to find dev with index %d",
-			candidatePod.Namespace, candidatePod.Name, id)
-		return nil, fmt.Errorf("failed to find gpu device")
+	for _, id := range ids {
+		_, exist := m.GetDeviceNameByIndex(uint(id))
+		if !exist {
+			klog.Warningf("Failed to find the dev for pod %s/%s because it's not able to find dev with index %d",
+				candidatePod.Namespace, candidatePod.Name, id)
+			return nil, fmt.Errorf("failed to find gpu device")
+		}
 	}
 
 	for _, req := range reqs.ContainerRequests {
 		reqGPU := len(req.DevicesIDs)
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
-				VisibleDevice:        fmt.Sprintf("%d", id),
+				VisibleDevice:        strings.Trim(strings.Replace(fmt.Sprint(ids), " ", ",", -1), "[]"),
 				AllocatedGPUResource: fmt.Sprintf("%d", reqGPU),
-				TotalGPUResource:     fmt.Sprintf("%d", gpuMemory),
+				TotalGPUMemory:       fmt.Sprintf("%d", gpuMemory),
 			},
 		}
 		responses.ContainerResponses = append(responses.ContainerResponses, &response)

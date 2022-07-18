@@ -40,6 +40,7 @@ type Device struct {
 }
 
 type ResourceManager interface {
+	GetPluginDevices(devs []*Device) []*pluginapi.Device
 	Devices() []*Device
 	CheckHealth(stop <-chan struct{}, devices []*Device, unhealthy chan<- *Device)
 }
@@ -68,6 +69,15 @@ func (g *GpuDeviceManager) Devices() []*Device {
 	}
 
 	return devs
+}
+
+// GetPluginDevices returns the plugin Devices from all devices in the Devices
+func (g *GpuDeviceManager) GetPluginDevices(devs []*Device) []*pluginapi.Device {
+	var res []*pluginapi.Device
+	for _, d := range devs {
+		res = append(res, &d.Device)
+	}
+	return res
 }
 
 func (g *GpuDeviceManager) CheckHealth(stop <-chan struct{}, devices []*Device, unhealthy chan<- *Device) {
