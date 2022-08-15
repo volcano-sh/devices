@@ -44,6 +44,7 @@ func NewConfig(c *cli.Context, flags []cli.Flag) (*Config, error) {
 	}
 
 	log.Println(c.String("gpu-strategy"))
+	log.Println(c.Uint("gpu-memory-factor"))
 
 	configFile := c.String("config-file")
 	if configFile != "" {

@@ -96,7 +96,7 @@ func (m *NvidiaDevicePlugin) initialize() {
 	m.health = make(chan *Device)
 	m.stop = make(chan struct{})
 
-	m.virtualDevices, m.devicesByIndex = GetDevices()
+	m.virtualDevices, m.devicesByIndex = GetDevices(m.config.Flags.GPUMemoryFactor)
 }
 
 func (m *NvidiaDevicePlugin) cleanup() {
@@ -389,7 +389,7 @@ Allocate:
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
 				VisibleDevice:        strings.Trim(strings.Replace(fmt.Sprint(ids), " ", ",", -1), "[]"),
-				AllocatedGPUResource: fmt.Sprintf("%d", reqGPU),
+				AllocatedGPUResource: fmt.Sprintf("%d", reqGPU*int(m.config.Flags.GPUMemoryFactor)),
 				TotalGPUMemory:       fmt.Sprintf("%d", gpuMemory),
 			},
 		}

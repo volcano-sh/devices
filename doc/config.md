@@ -7,11 +7,13 @@ The volcano device plugin has a number of options that can be configured. These 
 | Flag                     | Envvar                  | Default Value   |
 |--------------------------|-------------------------|-----------------|
 | `--gpu-strategy`         | `$GPU_STRATEGY`         | `"share"`       |
+| `--gpu-memory-factor`    | `$GPU_MEMORY_FACTOR`    | `1`             |
 | `--config-file`          | `$CONFIG_FILE`          | `""`            |
 
 when starting volcano-device-plugin.yml, users can specify these parameters by adding args to the container 'volcano-device-plugin'.
 For example: 
  - args: ["--gpu-strategy=number"] will let device plugin using the gpu-number strategy
+ - args: ["--gpu-strategy=share","--gpu-memory-factor=10"] will let device plugin using the gpu-share strategy, and memory factor is 10MB
 
 ### As a configuration file
 ```
@@ -21,7 +23,7 @@ flags:
 ```
 
 ### Configuration Option Details
-**`GPU_STRATEGY`**:
+**`GPU_STRATEGY`(string)**:
   the desired strategy for exposing GPU devices
 
   `[number | share ] (default 'share')`
@@ -29,6 +31,15 @@ flags:
   The `GPU_STRATEGY` option configures the daemonset to be able to expose
   on GPU devices in numbers or sharing mode. More information on what
   these strategies are and how to use it in Volcano can be found in Volcano scheduler.
+
+**`GPU_MEMORY_FACTOR`(uint)**:
+  the desired memory factor for exposing GPU shared memory virtual devices
+
+  `(default 1)`
+
+  The `GPU_MEMORY_FACTOR` option configures the daemonset to be able to expose
+  on GPU shared memory virtual devices size. By default each block is set to be 1MB, 
+  but users who have large gpu memory can specify a larger number such as 10MB, 100MB. 
 
 **`CONFIG_FILE`**:
   point the plugin at a configuration file instead of relying on command line

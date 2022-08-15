@@ -80,6 +80,12 @@ func main() {
 			Usage:   "the default strategy is using shared GPU devices while using 'number' meaning using GPUs individually. [number| share]",
 			EnvVars: []string{"GPU_STRATEGY"},
 		},
+		&cli.UintFlag{
+			Name:    "gpu-memory-factor",
+			Value:   1,
+			Usage:   "the default gpu memory block size is 1MB",
+			EnvVars: []string{"GPU_MEMORY_FACTOR"},
+		},
 		&cli.StringFlag{
 			Name:        "config-file",
 			Usage:       "the path to a config file as an alternative to command line options or environment variables",
