@@ -73,9 +73,7 @@ func GetDevices() ([]*pluginapi.Device, map[uint]string) {
 	for i := uint(0); i < n; i++ {
 		d, err := nvml.NewDevice(i)
 		check(err)
-		var id uint
-		_, err = fmt.Sscanf(d.Path, "/dev/nvidia%d", &id)
-		check(err)
+		id := i
 		deviceByIndex[id] = d.UUID
 		// TODO: Do we assume all cards are of same capacity
 		if GetGPUMemory() == uint(0) {

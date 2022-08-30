@@ -17,7 +17,6 @@
 package nvidia
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -65,7 +64,7 @@ func (g *GpuDeviceManager) Devices() []*Device {
 	for i := uint(0); i < n; i++ {
 		d, err := nvml.NewDeviceLite(i)
 		check(err)
-		devs = append(devs, buildDevice(d))
+		devs = append(devs, buildDevice(d, i))
 	}
 
 	return devs
@@ -84,14 +83,12 @@ func (g *GpuDeviceManager) CheckHealth(stop <-chan struct{}, devices []*Device, 
 	checkHealth(stop, devices, unhealthy)
 }
 
-func buildDevice(d *nvml.Device) *Device {
+func buildDevice(d *nvml.Device, devIndex uint) *Device {
 	dev := Device{}
 	dev.ID = d.UUID
 	dev.Health = pluginapi.Healthy
 	dev.Path = d.Path
-
-	_, err := fmt.Sscanf(d.Path, "/dev/nvidia%d", &dev.Index)
-	check(err)
+	dev.Index = devIndex
 
 	if d.CPUAffinity != nil {
 		dev.Topology = &pluginapi.TopologyInfo{
