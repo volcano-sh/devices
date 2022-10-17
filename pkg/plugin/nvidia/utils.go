@@ -64,7 +64,7 @@ func GetGPUMemory() uint {
 }
 
 // GetDevices returns virtual devices and all physical devices by index.
-func GetDevices() ([]*pluginapi.Device, map[uint]string) {
+func GetDevices(gpuMemoryFactor uint) ([]*pluginapi.Device, map[uint]string) {
 	n, err := nvml.GetDeviceCount()
 	check(err)
 
@@ -81,7 +81,7 @@ func GetDevices() ([]*pluginapi.Device, map[uint]string) {
 		if GetGPUMemory() == uint(0) {
 			SetGPUMemory(uint(*d.Memory))
 		}
-		for j := uint(0); j < GetGPUMemory(); j++ {
+		for j := uint(0); j < GetGPUMemory()/gpuMemoryFactor; j++ {
 			fakeID := GenerateVirtualDeviceID(id, j)
 			virtualDevs = append(virtualDevs, &pluginapi.Device{
 				ID:     fakeID,

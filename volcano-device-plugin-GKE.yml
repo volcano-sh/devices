@@ -92,6 +92,7 @@ spec:
       - image: volcanosh/volcano-device-plugin:latest
         name: volcano-device-plugin
         #args: ["--gpu-strategy=number"]
+        #args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
         env:
           - name: NODE_NAME
             valueFrom:

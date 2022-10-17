@@ -84,6 +84,7 @@ spec:
       containers:
       - image: volcanosh/volcano-device-plugin:latest
         #args: ["--gpu-strategy=number"]
+        #args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
         name: volcano-device-plugin
         env:
           - name: NODE_NAME
