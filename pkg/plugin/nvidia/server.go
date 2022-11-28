@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	apis "volcano.sh/k8s-device-plugin/pkg/apis"
+	"volcano.sh/k8s-device-plugin/pkg/util"
 )
 
 // NvidiaDevicePlugin implements the Kubernetes device plugin API
@@ -399,6 +400,13 @@ Allocate:
 	err = UpdatePodAnnotations(m.kubeInteractor.clientset, candidatePod)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update pod annotation %v", err)
+	}
+
+	util.UseClient(m.kubeInteractor.clientset)
+	klog.Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
+	err = util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+	if err != nil {
+		return nil, fmt.Errorf("failed to release lock %s", err.Error())
 	}
 
 	return &responses, nil
