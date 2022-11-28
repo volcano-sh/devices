@@ -367,6 +367,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 
 	if candidatePod == nil {
+		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 		return nil, fmt.Errorf("failed to find candidate pod")
 	}
 
@@ -374,11 +375,13 @@ Allocate:
 	ids := GetGPUIDsFromPodAnnotation(candidatePod)
 	if ids == nil {
 		klog.Warningf("Failed to get the gpu ids for pod %s/%s", candidatePod.Namespace, candidatePod.Name)
+		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 		return nil, fmt.Errorf("failed to find gpu ids")
 	}
 	for _, id := range ids {
 		_, exist := m.GetDeviceNameByIndex(uint(id))
 		if !exist {
+			util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 			klog.Warningf("Failed to find the dev for pod %s/%s because it's not able to find dev with index %d",
 				candidatePod.Namespace, candidatePod.Name, id)
 			return nil, fmt.Errorf("failed to find gpu device")
@@ -399,11 +402,12 @@ Allocate:
 
 	err = UpdatePodAnnotations(m.kubeInteractor.clientset, candidatePod)
 	if err != nil {
+		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 		return nil, fmt.Errorf("failed to update pod annotation %v", err)
 	}
 
 	util.UseClient(m.kubeInteractor.clientset)
-	klog.Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
+	klog.V(3).Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
 	err = util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 	if err != nil {
 		return nil, fmt.Errorf("failed to release lock %s", err.Error())
