@@ -410,7 +410,7 @@ Allocate:
 	klog.V(3).Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
 	err = util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 	if err != nil {
-		return nil, fmt.Errorf("failed to release lock %s", err.Error())
+		klog.Errorf("failed to release lock %s", err.Error())
 	}
 
 	return &responses, nil
