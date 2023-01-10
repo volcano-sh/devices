@@ -30,6 +30,7 @@ replace (
 require (
 	github.com/NVIDIA/gpu-monitoring-tools v0.0.0-20200421213100-de959f43b55a
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/mitchellh/gox v1.0.1 // indirect
 	github.com/prometheus/common v0.4.1
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.4.0
@@ -39,6 +40,7 @@ require (
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v0.18.2
 	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.80.1
 	k8s.io/kubelet v0.0.0
 	k8s.io/kubernetes v1.18.2
 	sigs.k8s.io/yaml v1.2.0
