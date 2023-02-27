@@ -20,28 +20,33 @@
 
 DOCKER   ?= docker
 REGISTRY ?= volcanosh
-VERSION  ?= 1.0.0
+VERSION  ?= latest
+TAG_VERSION ?= 1.0.0
 
 ##### Public rules #####
 
-all: ubuntu16.04 centos7
+all: ubuntu20.04 centos7
 
 push:
-	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu16.04"
+	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04"
 	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(VERSION)-centos7"
 
 push-short:
-	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu16.04" "$(REGISTRY)/volcano-device-plugin:$(VERSION)"
+	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:$(VERSION)"
 	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(VERSION)"
 
 push-latest:
-	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu16.04" "$(REGISTRY)/volcano-device-plugin:latest"
+	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:latest"
 	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:latest"
 
-ubuntu16.04:
+push-tag:
+	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
+
+ubuntu20.04:
 	$(DOCKER) build --pull \
-		--tag $(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu16.04 \
-		--file docker/amd64/Dockerfile.ubuntu16.04 .
+		--tag $(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04 \
+		--file docker/amd64/Dockerfile.ubuntu20.04 .
 
 centos7:
 	$(DOCKER) build --pull \

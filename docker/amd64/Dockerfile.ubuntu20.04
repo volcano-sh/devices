@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:16.04 as build
+FROM ubuntu:20.04 as build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         g++ \
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         wget && \
     rm -rf /var/lib/apt/lists/*
 
-ENV GOLANG_VERSION 1.17.6
+ENV GOLANG_VERSION 1.19.3
 RUN wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz \
     | tar -C /usr/local -xz
 ENV GOPATH /go
@@ -29,6 +29,8 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /go/src/volcano.sh/devices
 COPY . .
 
+RUN go env -w GO111MODULE=on
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
     go build -ldflags="-s -w" -o volcano-device-plugin
 
