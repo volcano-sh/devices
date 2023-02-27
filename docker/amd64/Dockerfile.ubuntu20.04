@@ -29,8 +29,6 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /go/src/volcano.sh/devices
 COPY . .
 
-RUN go env -w GO111MODULE=on
-RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
     go build -ldflags="-s -w" -o volcano-device-plugin
 
