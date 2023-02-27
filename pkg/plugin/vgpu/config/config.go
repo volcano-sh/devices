@@ -14,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package config
 
-// DevicePlugin interface
-type DevicePlugin interface {
-	// Get the device plugin name
-	Name() string
-	// Start the plugin
-	Start() error
-	// Get all the devices number which reside within the node
-	DevicesNum() int
-	// Stop the plugin
-	Stop() error
-}
+var (
+	DeviceSplitCount   uint
+	DeviceCoresScaling float64
+	NodeName           string
+	RuntimeSocketFlag  string
+	DisableCoreLimit   bool
+)

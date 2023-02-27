@@ -73,13 +73,41 @@ We will be editing the docker daemon config file which is usually present at `/e
 Once you have enabled this option on *all* the GPU nodes you wish to use,
 you can then enable GPU support in your cluster by deploying the following Daemonset:
 
+VGPU:
+```
+$ kubectl create -f volcano-vgpu-device-plugin.yml
+```
+
+GPU-SHARE (**Will be deprecated in volcano v1.9**):
 ```shell
 $ kubectl create -f volcano-device-plugin.yml
 ```
 
 **Note** that volcano device plugin can be configured. For example, it can specify gpu strategy by adding in the yaml file ''args: ["--gpu-strategy=number"]'' under ''image: volcanosh/volcano-device-plugin''. More configuration can be found at [volcano device plugin configuration](https://github.com/volcano-sh/devices/blob/master/doc/config.md).
 
-### Running GPU Sharing Jobs
+### Running VGPU Jobs
+
+VGPU can be requested by both set "volcano.sh/vgpu-number" and "volcano.sh/vgpu-memory" in resource.limit
+
+```shell script
+$ cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-pod1
+spec:
+  containers:
+    - name: cuda-container
+      image: nvidia/cuda:9.0-devel
+      command: ["sleep"]
+      args: ["100000"]
+      resources:
+        limits:
+          volcano.sh/vgpu-number: 2 # requesting 1 gpu cards
+          volcano.sh/vgpu-memory: 3000
+EOF
+```
+### Running GPU Sharing Jobs (**Will be deprecated in volcano v1.9**)
 
 NVIDIA GPUs can now be shared via container level resource requirements using the resource name volcano.sh/gpu-memory:
 
@@ -116,7 +144,7 @@ spec:
 > **WARNING:** *if you don't request GPUs when using the device plugin with NVIDIA images all
 > the GPUs on the machine will be exposed inside your container.*
 
-### Running GPU Number Jobs
+### Running GPU Number Jobs (**Will be deprecated in volcano v1.9**)
 
 NVIDIA GPUs can now be requested via container level resource requirements using the resource name volcano.sh/gpu-number:
 
@@ -142,7 +170,7 @@ EOF
 
 Please note that:
 - the device plugin feature is beta as of Kubernetes v1.11.
-- the Volcano device plugin is alpha and is missing
+- the gpu-share device plugin is alpha and is missing the following features, and will be deprecated in volcano v1.9
     - More comprehensive GPU health checking features
     - GPU cleanup features
     - GPU hard isolation
@@ -152,19 +180,16 @@ The next sections are focused on building the device plugin and running it.
 
 ### With Docker
 
-#### Build
-```shell
-$ make ubuntu16.04.
-```
-
-#### Run locally
-```shell
-$ docker run --security-opt=no-new-privileges --cap-drop=ALL --network=none -it -v /var/lib/kubelet/device-plugins:/var/lib/kubelet/device-plugins nvidia/k8s-device-plugin:{version}
-```
-
 #### Deploy as DaemonSet:
+
+GPU-SHARE:
 ```shell
 $ kubectl create -f nvidia-device-plugin.yml
+```
+
+VGPU:
+```shell
+$ kubectl create -f nvidia-vgpu-device-plugin.yml
 ```
 
 # Issues and Contributing

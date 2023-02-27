@@ -33,3 +33,6 @@ jobs:
 
       - run: make ubuntu20.04
       - run: make push-latest
+      - run: make vgpu
+      - run: TAG_VERSION="${BRANCH_NAME}" make push-vgpu-tag
+
