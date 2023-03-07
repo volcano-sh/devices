@@ -38,4 +38,6 @@ const (
 	TotalGPUMemory = "VOLCANO_GPU_MEMORY_TOTAL"
 	// NVIDIA visible devices
 	VisibleDevice = "NVIDIA_VISIBLE_DEVICES"
+
+	deviceName = "gpu"
 )

@@ -83,8 +83,11 @@ spec:
       serviceAccount: volcano-device-plugin
       containers:
       - image: volcanosh/volcano-device-plugin:1.0.0-ubuntu20.04
-        #args: ["--gpu-strategy=number"]
-        #args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
+        args: ["--device-split-count=10"]
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh","-c","cp -f /k8s-vgpu/lib/nvidia/* /usr/local/vgpu/"]
         name: volcano-device-plugin
         command: ["sleep","infinity"]
         env:

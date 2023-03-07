@@ -43,10 +43,19 @@ push-tag:
 	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
 	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
 
+push-vgpu-tag:
+	$(DOCKER) tag "$(REGISTRY)/volcano-vgpu-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-vgpu-device-plugin:$(TAG_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)" 
+
 ubuntu20.04:
 	$(DOCKER) build --pull \
 		--tag $(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04 \
 		--file docker/amd64/Dockerfile.ubuntu20.04 .
+
+vgpu:
+	$(DOCKER) build --pull \
+		--tag $(REGISTRY)/volcano-vgpu-device-plugin:$(VERSION)-ubuntu20.04 \
+		--file docker/amd64/Dockerfile.vgpu-ubuntu20.04 .
 
 centos7:
 	$(DOCKER) build --pull \

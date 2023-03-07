@@ -87,9 +87,7 @@ func (ki *KubeInteractor) GetPendingPodsOnNode() ([]v1.Pod, error) {
 		return nil, fmt.Errorf("kube interactor timedout: %v", err)
 	}
 
-	for _, pod := range pl.Items {
-		res = append(res, pod)
-	}
+	res = append(res, pl.Items...)
 
 	return res, nil
 }
