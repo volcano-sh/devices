@@ -30,14 +30,15 @@ WORKDIR /go/src/volcano.sh/devices
 COPY . .
 
 RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
-    go build -ldflags="-s -w" -o volcano-device-plugin
-
+    go build -ldflags="-s -w" -o volcano-vgpu-device-plugin ./cmd/vgpu4pd
 
 FROM debian:stretch-slim
 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
-COPY --from=build /go/src/volcano.sh/devices/volcano-device-plugin /usr/bin/volcano-device-plugin
+COPY --from=build /go/src/volcano.sh/devices/volcano-vgpu-device-plugin /usr/bin/volcano-vgpu-device-plugin
+RUN mkdir -p /k8s-vgpu/lib/nvidia
+COPY --from=build /go/src/volcano.sh/devices/lib/* /k8s-vgpu/lib/nvidia/
 
-ENTRYPOINT ["volcano-device-plugin"]
+ENTRYPOINT ["volcano-vgpu-device-plugin"]

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Volcano Authors.
+Copyright 2023 The Volcano Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -87,9 +87,7 @@ func (ki *KubeInteractor) GetPendingPodsOnNode() ([]v1.Pod, error) {
 		return nil, fmt.Errorf("kube interactor timedout: %v", err)
 	}
 
-	for _, pod := range pl.Items {
-		res = append(res, pod)
-	}
+	res = append(res, pl.Items...)
 
 	return res, nil
 }

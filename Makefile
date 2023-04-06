@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@
 
 DOCKER   ?= docker
 REGISTRY ?= volcanosh
-VERSION  ?= 1.0.0
+VERSION  ?= latest
+TAG_VERSION ?= 1.0.0
 
 ##### Public rules #####
 
@@ -38,10 +39,23 @@ push-latest:
 	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:latest"
 	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:latest"
 
+push-tag:
+	$(DOCKER) tag "$(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/volcano-device-plugin:$(TAG_VERSION)"
+
+push-vgpu-tag:
+	$(DOCKER) tag "$(REGISTRY)/volcano-vgpu-device-plugin:$(VERSION)-ubuntu20.04" "$(REGISTRY)/volcano-vgpu-device-plugin:$(TAG_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/volcano-vgpu-device-plugin:$(TAG_VERSION)" 
+
 ubuntu20.04:
 	$(DOCKER) build --pull \
 		--tag $(REGISTRY)/volcano-device-plugin:$(VERSION)-ubuntu20.04 \
 		--file docker/amd64/Dockerfile.ubuntu20.04 .
+
+vgpu:
+	$(DOCKER) build --pull \
+		--tag $(REGISTRY)/volcano-vgpu-device-plugin:$(VERSION)-ubuntu20.04 \
+		--file docker/amd64/Dockerfile.vgpu-ubuntu20.04 .
 
 centos7:
 	$(DOCKER) build --pull \

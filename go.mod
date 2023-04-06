@@ -28,13 +28,15 @@ replace (
 )
 
 require (
-	github.com/NVIDIA/gpu-monitoring-tools v0.0.0-20200421213100-de959f43b55a
+	github.com/NVIDIA/go-gpuallocator v0.2.3
+	github.com/NVIDIA/gpu-monitoring-tools v0.0.0-20201109160820-d08ea3cdcce4
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/mitchellh/gox v1.0.1 // indirect
 	github.com/prometheus/common v0.4.1
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.4.0
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd // indirect
+	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	google.golang.org/grpc v1.29.0
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2

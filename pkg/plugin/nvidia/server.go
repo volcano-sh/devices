@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Volcano Authors.
+Copyright 2023 The Volcano Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	apis "volcano.sh/k8s-device-plugin/pkg/apis"
-	"volcano.sh/k8s-device-plugin/pkg/util"
+	"volcano.sh/k8s-device-plugin/pkg/lock"
 )
 
 // NvidiaDevicePlugin implements the Kubernetes device plugin API
@@ -136,7 +136,6 @@ func (m *NvidiaDevicePlugin) Name() string {
 func (m *NvidiaDevicePlugin) Start() error {
 	m.initialize()
 	// must be called after initialize
-	//gpustrategy=share patch number
 	if m.resourceName == VolcanoGPUMemory {
 		if err := m.kubeInteractor.PatchGPUResourceOnNode(len(m.physicalDevices)); err != nil {
 			log.Printf("failed to patch gpu resource: %v", err)
@@ -367,7 +366,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 
 	if candidatePod == nil {
-		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+		lock.ReleaseNodeLock(m.kubeInteractor.nodeName, deviceName)
 		return nil, fmt.Errorf("failed to find candidate pod")
 	}
 
@@ -375,13 +374,13 @@ Allocate:
 	ids := GetGPUIDsFromPodAnnotation(candidatePod)
 	if ids == nil {
 		klog.Warningf("Failed to get the gpu ids for pod %s/%s", candidatePod.Namespace, candidatePod.Name)
-		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+		lock.ReleaseNodeLock(m.kubeInteractor.nodeName, deviceName)
 		return nil, fmt.Errorf("failed to find gpu ids")
 	}
 	for _, id := range ids {
 		_, exist := m.GetDeviceNameByIndex(uint(id))
 		if !exist {
-			util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+			lock.ReleaseNodeLock(m.kubeInteractor.nodeName, deviceName)
 			klog.Warningf("Failed to find the dev for pod %s/%s because it's not able to find dev with index %d",
 				candidatePod.Namespace, candidatePod.Name, id)
 			return nil, fmt.Errorf("failed to find gpu device")
@@ -402,13 +401,13 @@ Allocate:
 
 	err = UpdatePodAnnotations(m.kubeInteractor.clientset, candidatePod)
 	if err != nil {
-		util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+		lock.ReleaseNodeLock(m.kubeInteractor.nodeName, deviceName)
 		return nil, fmt.Errorf("failed to update pod annotation %v", err)
 	}
 
-	util.UseClient(m.kubeInteractor.clientset)
+	lock.UseClient(m.kubeInteractor.clientset)
 	klog.V(3).Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
-	err = util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
+	err = lock.ReleaseNodeLock(m.kubeInteractor.nodeName, deviceName)
 	if err != nil {
 		klog.Errorf("failed to release lock %s", err.Error())
 	}

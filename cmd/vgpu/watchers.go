@@ -14,16 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package main
 
-// DevicePlugin interface
-type DevicePlugin interface {
-	// Get the device plugin name
-	Name() string
-	// Start the plugin
-	Start() error
-	// Get all the devices number which reside within the node
-	DevicesNum() int
-	// Stop the plugin
-	Stop() error
+import (
+	"os"
+	"os/signal"
+
+	"github.com/fsnotify/fsnotify"
+)
+
+func NewFSWatcher(files ...string) (*fsnotify.Watcher, error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		err = watcher.Add(f)
+		if err != nil {
+			watcher.Close()
+			return nil, err
+		}
+	}
+
+	return watcher, nil
+}
+
+func NewOSWatcher(sigs ...os.Signal) chan os.Signal {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, sigs...)
+
+	return sigChan
 }
