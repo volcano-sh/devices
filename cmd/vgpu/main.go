@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-	nvidiadevice "volcano.sh/k8s-device-plugin/pkg/plugin/vgpu4pd"
-	"volcano.sh/k8s-device-plugin/pkg/plugin/vgpu4pd/config"
-	"volcano.sh/k8s-device-plugin/pkg/plugin/vgpu4pd/util"
+	nvidiadevice "volcano.sh/k8s-device-plugin/pkg/plugin/vgpu"
+	"volcano.sh/k8s-device-plugin/pkg/plugin/vgpu/config"
+	"volcano.sh/k8s-device-plugin/pkg/plugin/vgpu/util"
 )
 
 var (

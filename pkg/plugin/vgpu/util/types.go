@@ -47,7 +47,7 @@ const (
 	NodeNvidiaDeviceRegistered = "volcano.sh/node-vgpu-register"
 
 	// DeviceName used to indicate this device
-	VGPUDeviceName = "vgpu4pd"
+	VGPUDeviceName = "vgpu"
 )
 
 var (
