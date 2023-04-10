@@ -30,7 +30,7 @@ WORKDIR /go/src/volcano.sh/devices
 COPY . .
 
 RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' && \
-    go build -ldflags="-s -w" -o volcano-vgpu-device-plugin ./cmd/vgpu4pd
+    go build -ldflags="-s -w" -o volcano-vgpu-device-plugin ./cmd/vgpu
 
 FROM debian:stretch-slim
 
