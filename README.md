@@ -109,6 +109,8 @@ EOF
 ```
 ### Running GPU Sharing Jobs (**Will be deprecated in volcano v1.9**)
 
+
+
 NVIDIA GPUs can now be shared via container level resource requirements using the resource name volcano.sh/gpu-memory:
 
 The node resource capability and allocatable metadata will show volcano.sh/gpu-number, but user **can not** specify this resource name at the container level. This is because the device-plugin patches volcano.sh/gpu-number to show the total number of gpus, which is only used for volcano scheduler to calculate the memory for each gpu. GPU number in this mode is not registered in kubelet and does not have health-check on it.
