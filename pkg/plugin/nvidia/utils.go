@@ -213,7 +213,12 @@ func UpdatePodAnnotations(kubeClient *kubernetes.Clientset, pod *v1.Pod) error {
 			Annotations: pod.Annotations,
 		},
 	}
+
 	patchBytes, err := json.Marshal(&addAnnotationsPath)
+	if err != nil {
+		return err
+	}
+
 	_, err = kubeClient.CoreV1().Pods(pod.Namespace).Patch(context.TODO(), pod.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 	return err
 }
