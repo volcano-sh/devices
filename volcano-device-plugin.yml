@@ -32,7 +32,7 @@ rules:
     verbs: ["patch"]
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["get", "list", "update","patch"]
+    verbs: ["get", "list", "update", "patch"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
