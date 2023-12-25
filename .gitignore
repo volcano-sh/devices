@@ -129,3 +129,7 @@ kubernetes.tar.gz
 # test coverage file
 coverage.txt
 
+updateso.sh
+
+lib/nvidia/libvgpu/build
+
