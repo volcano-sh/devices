@@ -39,6 +39,5 @@ ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
 COPY --from=build /go/src/volcano.sh/devices/volcano-vgpu-device-plugin /usr/bin/volcano-vgpu-device-plugin
 RUN mkdir -p /k8s-vgpu/lib/nvidia
-COPY --from=build /go/src/volcano.sh/devices/lib/* /k8s-vgpu/lib/nvidia/
 
 ENTRYPOINT ["volcano-vgpu-device-plugin"]

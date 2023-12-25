@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/klog/v2"
 	"volcano.sh/k8s-device-plugin/pkg/lock"
 	"volcano.sh/k8s-device-plugin/pkg/plugin/vgpu/config"
@@ -310,7 +309,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 
 	for idx := range reqs.ContainerRequests {
-		currentCtr, devreq, err := util.GetNextDeviceRequest(util.NvidiaGPUDevice, *current)
+		_, devreq, err := util.GetNextDeviceRequest(util.NvidiaGPUDevice, *current)
 		klog.Infoln("deviceAllocateFromAnnotation=", devreq)
 		if err != nil {
 			klog.Errorln("get device from annotation failed", err.Error())
@@ -342,29 +341,6 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 				response.Envs["NVIDIA_VISIBLE_DEVICES"] = dev.UUID
 			}
 		}
-		response.Envs["CUDA_DEVICE_MEMORY_SHARED_CACHE"] = fmt.Sprintf("/tmp/vgpu/%v.cache", uuid.NewUUID())
-
-		cacheFileHostDirectory := "/tmp/vgpu/containers/" + string(current.UID) + "_" + currentCtr.Name
-		os.MkdirAll(cacheFileHostDirectory, 0777)
-		os.Chmod(cacheFileHostDirectory, 0777)
-		os.MkdirAll("/tmp/vgpulock", 0777)
-		os.Chmod("/tmp/vgpulock", 0777)
-		hostHookPath := os.Getenv("HOOK_PATH")
-		response.Mounts = append(response.Mounts,
-			&pluginapi.Mount{ContainerPath: "/usr/local/vgpu/libvgpu.so",
-				HostPath: hostHookPath + "/libvgpu.so",
-				ReadOnly: true},
-			&pluginapi.Mount{ContainerPath: "/etc/ld.so.preload",
-				HostPath: hostHookPath + "/ld.so.preload",
-				ReadOnly: true},
-			&pluginapi.Mount{ContainerPath: "/tmp/vgpu",
-				HostPath: cacheFileHostDirectory,
-				ReadOnly: false},
-			&pluginapi.Mount{ContainerPath: "/tmp/vgpulock",
-				HostPath: "/tmp/vgpulock",
-				ReadOnly: false},
-		)
-		responses.ContainerResponses = append(responses.ContainerResponses, &response)
 	}
 	klog.Infoln("Allocate Response", responses.ContainerResponses)
 	util.PodAllocationTrySuccess(nodename, current)
