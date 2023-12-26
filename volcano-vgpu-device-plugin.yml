@@ -82,7 +82,7 @@ spec:
       priorityClassName: "system-node-critical"
       serviceAccount: volcano-device-plugin
       containers:
-      - image: 4pdosc/volcano-vgpu-device-plugin:master
+      - image: volcanosh/volcano-vgpu-device-plugin:dev-vgpu-1219
         args: ["--device-split-count=10"]
         lifecycle:
           postStart:
