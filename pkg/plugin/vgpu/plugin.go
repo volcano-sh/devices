@@ -350,12 +350,10 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 		os.MkdirAll("/tmp/vgpulock", 0777)
 		os.Chmod("/tmp/vgpulock", 0777)
 		hostHookPath := os.Getenv("HOOK_PATH")
+
 		response.Mounts = append(response.Mounts,
 			&pluginapi.Mount{ContainerPath: "/usr/local/vgpu/libvgpu.so",
 				HostPath: hostHookPath + "/libvgpu.so",
-				ReadOnly: true},
-			&pluginapi.Mount{ContainerPath: "/etc/ld.so.preload",
-				HostPath: hostHookPath + "/ld.so.preload",
 				ReadOnly: true},
 			&pluginapi.Mount{ContainerPath: "/tmp/vgpu",
 				HostPath: cacheFileHostDirectory,
@@ -364,6 +362,19 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 				HostPath: "/tmp/vgpulock",
 				ReadOnly: false},
 		)
+		found := false
+		for _, val := range currentCtr.Env {
+			if strings.Compare(val.Name, "CUDA_DISABLE_CONTROL") == 0 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			response.Mounts = append(response.Mounts, &pluginapi.Mount{ContainerPath: "/etc/ld.so.preload",
+				HostPath: hostHookPath + "/vgpu/ld.so.preload",
+				ReadOnly: true},
+			)
+		}
 		responses.ContainerResponses = append(responses.ContainerResponses, &response)
 	}
 	klog.Infoln("Allocate Response", responses.ContainerResponses)
