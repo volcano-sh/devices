@@ -35,7 +35,7 @@ RUN export CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' &
     go build -ldflags="-s -w" -o volcano-vgpu-device-plugin ./cmd/vgpu
 
 FROM $NVIDIA_IMAGE AS NVBUILD
-COPY ./lib/nvidia/libvgpu /libvgpu
+COPY ./libvgpu /libvgpu
 WORKDIR /libvgpu
 RUN apt-get -y update; apt-get -y install wget
 RUN wget https://cmake.org/files/v3.19/cmake-3.19.8-Linux-x86_64.tar.gz

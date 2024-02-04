@@ -1,0 +1,3 @@
+[submodule "libvgpu"]
+	path = libvgpu
+	url = https://github.com/Project-HAMi/HAMi-core.git

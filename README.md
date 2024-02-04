@@ -1,7 +1,8 @@
 # Volcano device plugin for Kubernetes
 
 **Note**:
-This is based on [Nvidia Device Plugin](https://github.com/NVIDIA/k8s-device-plugin) to support soft isolation of GPU card.
+This is based on [Nvidia Device Plugin](https://github.com/NVIDIA/k8s-device-plugin), it uses [HAMi-core](https://github.com/Project-HAMi/HAMi-core) to support hard isolation of GPU card.
+
 And collaborate with volcano, it is possible to enable GPU sharing.
 
 ## Table of Contents
@@ -23,6 +24,7 @@ The Volcano device plugin for Kubernetes is a Daemonset that allows you to autom
 - Expose the number of GPUs on each node of your cluster
 - Keep track of the health of your GPUs
 - Run GPU enabled containers in your Kubernetes cluster.
+- Enforce hard resource limit in container.
 
 This repository contains Volcano's official implementation of the [Kubernetes device plugin](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/resource-management/device-plugin.md).
 

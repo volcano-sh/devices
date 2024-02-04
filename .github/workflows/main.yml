@@ -5,7 +5,9 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
     branches: [master,dev-vgpu-1219]
   pull_request:
-    branches: [master,dev-vgpu-1219]
+    branches: [master]
+  pull_request_target:
+    branches: [dev-vgpu-1219]
 
 jobs:
   build:
@@ -15,6 +17,12 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: "^1.19.x"
+
+      - name: Checkout submodule
+        uses: Mushus/checkout-submodule@v1.0.1
+        with:
+            submodulePath: libvgpu 
+
       - run: go version
       # Runs a set of commands to initialize and analyze with FOSSA
       
