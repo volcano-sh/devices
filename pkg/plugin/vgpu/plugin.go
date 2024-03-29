@@ -303,6 +303,12 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	responses := pluginapi.AllocateResponse{}
 	nodename := os.Getenv("NODE_NAME")
 
+	err := lock.LockNode(nodename, util.VGPUDeviceName)
+	if err != nil {
+		lock.ReleaseNodeLock(nodename, util.VGPUDeviceName)
+		return &pluginapi.AllocateResponse{}, err
+	}
+
 	current, err := util.GetPendingPod(nodename)
 	if err != nil {
 		lock.ReleaseNodeLock(nodename, util.VGPUDeviceName)
