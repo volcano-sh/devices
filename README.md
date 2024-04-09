@@ -89,7 +89,7 @@ $ kubectl create -f volcano-device-plugin.yml
 
 ### Running VGPU Jobs
 
-VGPU can be requested by both set "volcano.sh/vgpu-number" and "volcano.sh/vgpu-memory" in resource.limit
+VGPU can be requested by both set "volcano.sh/vgpu-number" , "volcano.sh/vgpu-cores" and "volcano.sh/vgpu-memory" in resource.limit
 
 ```shell script
 $ cat <<EOF | kubectl apply -f -
@@ -106,7 +106,8 @@ spec:
       resources:
         limits:
           volcano.sh/vgpu-number: 2 # requesting 1 gpu cards
-          volcano.sh/vgpu-memory: 3000
+          volcano.sh/vgpu-memory: 3000 # each vGPU uses 3G device memory
+          volcano.sh/vgpu-cores: 50 # each vGPU uses 50% core  
 EOF
 ```
 ### Running GPU Sharing Jobs (**Will be deprecated in volcano v1.9**)

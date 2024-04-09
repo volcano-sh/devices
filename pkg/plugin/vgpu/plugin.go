@@ -342,6 +342,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 				response.Envs["NVIDIA_VISIBLE_DEVICES"] = dev.UUID
 			}
 		}
+		response.Envs["CUDA_DEVICE_SM_LIMIT"] = fmt.Sprint(devreq[0].Usedcores)
 		response.Envs["CUDA_DEVICE_MEMORY_SHARED_CACHE"] = fmt.Sprintf("/tmp/vgpu/%v.cache", uuid.NewUUID())
 
 		cacheFileHostDirectory := "/tmp/vgpu/containers/" + string(current.UID) + "_" + currentCtr.Name
@@ -371,7 +372,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 		}
 		if !found {
 			response.Mounts = append(response.Mounts, &pluginapi.Mount{ContainerPath: "/etc/ld.so.preload",
-				HostPath: hostHookPath + "/vgpu/ld.so.preload",
+				HostPath: hostHookPath + "/ld.so.preload",
 				ReadOnly: true},
 			)
 		}

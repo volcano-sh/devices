@@ -13,4 +13,4 @@ spec:
     resources:
       limits:
         volcano.sh/vgpu-memory: 1024
-        #volcano.sh/vgpu-number: 1
+        volcano.sh/vgpu-number: 1
