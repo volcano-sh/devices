@@ -32,7 +32,7 @@ rules:
     verbs: ["patch"]
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["get", "list", "update","patch"]
+    verbs: ["get", "list", "update", "patch"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -82,11 +82,10 @@ spec:
       priorityClassName: "system-node-critical"
       serviceAccount: volcano-device-plugin
       containers:
-      - image: volcanosh/volcano-device-plugin:1.0.0-ubuntu20.04
+      - image: volcanosh/volcano-device-plugin:latest
         #args: ["--gpu-strategy=number"]
-        args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
+        #args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
         name: volcano-device-plugin
-        #command: ["sleep","infinity"]
         env:
           - name: NODE_NAME
             valueFrom:
@@ -96,21 +95,10 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
-            add: ["SYS_ADMIN"]
         volumeMounts:
           - name: device-plugin
             mountPath: /var/lib/kubelet/device-plugins
-          - name: lib
-            mountPath: /usr/local/vgpu
-          - name: hosttmp
-            mountPath: /tmp
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
-        - name: lib
-          hostPath:
-            path: /usr/local/vgpu
-        - name: hosttmp
-          hostPath:
-            path: /tmp
