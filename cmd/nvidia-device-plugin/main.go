@@ -34,7 +34,6 @@ import (
 
 	spec "github.com/NVIDIA/k8s-device-plugin/api/config/v1"
 	"github.com/NVIDIA/k8s-device-plugin/internal/info"
-	"github.com/NVIDIA/k8s-device-plugin/internal/logger"
 	"github.com/NVIDIA/k8s-device-plugin/internal/plugin"
 	"github.com/NVIDIA/k8s-device-plugin/internal/rm"
 	"github.com/NVIDIA/k8s-device-plugin/internal/watch"
@@ -280,7 +279,14 @@ func startPlugins(c *cli.Context, flags []cli.Flag) ([]plugin.Interface, bool, e
 	if err != nil {
 		return nil, false, fmt.Errorf("unable to load config: %v", err)
 	}
-	spec.DisableResourceNamingInConfig(logger.ToKlog, config)
+
+	// This block has been commented out due to issue #69.
+	// Date: 2024-08-07
+	// Reason: Commenting out this block allows for the configuration of resource naming.
+	// This enables the setting of different quotas for various GPU types.
+	// For more details, see the GitHub issue: https://github.com/volcano-sh/devices/issues/69
+
+	// spec.DisableResourceNamingInConfig(logger.ToKlog, config)
 
 	driverRoot := root(*config.Flags.Plugin.ContainerDriverRoot)
 	// We construct an NVML library specifying the path to libnvidia-ml.so.1
