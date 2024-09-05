@@ -2,6 +2,10 @@
 
 [![End-to-end Tests](https://github.com/NVIDIA/k8s-device-plugin/actions/workflows/e2e.yaml/badge.svg)](https://github.com/NVIDIA/k8s-device-plugin/actions/workflows/e2e.yaml) [![Go Report Card](https://goreportcard.com/badge/github.com/NVIDIA/k8s-device-plugin)](https://goreportcard.com/report/github.com/NVIDIA/k8s-device-plugin) [![Latest Release](https://img.shields.io/github/v/release/NVIDIA/k8s-device-plugin)](https://github.com/NVIDIA/k8s-device-plugin/releases/latest)
 
+> This fork of the NVIDIA device plugin for Kubernetes has a `release-1.1` branch that is based on the `v0.16.1` tag of the original NVIDIA repository. This version includes all the features and updates available in the `v0.16.1` tag, along with any additional modifications specific to this fork.
+> 
+> For more details on the changes and updates in this release, please refer to the [Documentation](docs/resource-naming/README.md).
+
 ## Table of Contents
 
 - [About](#about)
