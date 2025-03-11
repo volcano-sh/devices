@@ -186,9 +186,20 @@ func (m *NvidiaDevicePlugin) DevicesNum() int {
 
 // Serve starts the gRPC server of the device plugin.
 func (m *NvidiaDevicePlugin) Serve() error {
+
 	sock, err := net.Listen("unix", m.socket)
 	if err != nil {
-		return err
+		log.Printf("Listen sock fail and retry for '%s': %s", m.resourceName, err)
+		err = os.Remove(m.socket)
+		if err != nil {
+			log.Printf("Error deleting file: %s, %v\n", m.socket, err)
+			return err
+		}
+		sock, err = net.Listen("unix", m.socket)
+		if err != nil {
+			log.Printf("Retry Listen sock fail '%s': %s", m.resourceName, err)
+			return err
+		}
 	}
 
 	pluginapi.RegisterDevicePluginServer(m.server, m)
@@ -343,6 +354,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	}
 
 	sort.Sort(availablePods)
+	util.UseClient(m.kubeInteractor.clientset)
 
 	var candidatePod *v1.Pod
 	for _, pod := range availablePods {
@@ -406,7 +418,6 @@ Allocate:
 		return nil, fmt.Errorf("failed to update pod annotation %v", err)
 	}
 
-	util.UseClient(m.kubeInteractor.clientset)
 	klog.V(3).Infoln("Releasing lock: nodeName=", m.kubeInteractor.nodeName)
 	err = util.ReleaseNodeLock(m.kubeInteractor.nodeName, "gpu")
 	if err != nil {
