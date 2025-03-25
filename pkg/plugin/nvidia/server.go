@@ -71,6 +71,7 @@ func NewNvidiaDevicePlugin(config *apis.Config) *NvidiaDevicePlugin {
 	if err != nil {
 		klog.Fatalf("cannot create kube interactor. %v", err)
 	}
+	lock.UseClient(ki.clientset)
 
 	return &NvidiaDevicePlugin{
 		ResourceManager: NewGpuDeviceManager(),
