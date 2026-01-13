@@ -27,7 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
@@ -57,11 +58,15 @@ type NvidiaDevicePlugin struct {
 	config         *apis.Config
 }
 
+var (
+	nvmllib = nvml.New()
+)
+
 // NewNvidiaDevicePlugin returns an initialized NvidiaDevicePlugin
 func NewNvidiaDevicePlugin(config *apis.Config) *NvidiaDevicePlugin {
 	log.Println("Loading NVML")
-	if err := nvml.Init(); err != nil {
-		log.Printf("Failed to initialize NVML: %s.", err)
+	if ret := nvmllib.Init(); ret != nvml.SUCCESS {
+		log.Printf("Failed to initialize NVML: %v.", ret)
 		log.Printf("If this is a GPU node, did you set the docker default runtime to `nvidia`?")
 		log.Printf("You can check the prerequisites at: https://github.com/volcano-sh/k8s-device-plugin#prerequisites")
 		log.Fatalf("You can learn how to set the runtime at: https://github.com/volcano-sh/k8s-device-plugin#quick-start")

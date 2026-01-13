@@ -20,9 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         wget && \
     rm -rf /var/lib/apt/lists/*
 
-ENV GOLANG_VERSION 1.19.3
-RUN wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz \
-    | tar -C /usr/local -xz
+ARG TARGETARCH
+RUN wget -qO- https://storage.googleapis.com/golang/go1.23.7.linux-${TARGETARCH}.tar.gz | tar -C /usr/local -zx
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 

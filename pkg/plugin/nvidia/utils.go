@@ -20,15 +20,17 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 
-	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
+
 	"github.com/prometheus/common/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -65,20 +67,46 @@ func GetGPUMemory() uint {
 
 // GetDevices returns virtual devices and all physical devices by index.
 func GetDevices(gpuMemoryFactor uint) ([]*pluginapi.Device, map[uint]string) {
-	n, err := nvml.GetDeviceCount()
-	check(err)
+	count, ret := nvmllib.DeviceGetCount()
+	if ret != nvml.SUCCESS {
+		klog.Fatalf("Failed to get device count: %s", nvmllib.ErrorString(ret))
+	}
 
 	var virtualDevs []*pluginapi.Device
 	deviceByIndex := map[uint]string{}
-	for i := uint(0); i < n; i++ {
-		d, err := nvml.NewDevice(i)
-		check(err)
-		id := i
-		deviceByIndex[id] = d.UUID
+	for i := 0; i < count; i++ {
+		device, ret := nvmllib.DeviceGetHandleByIndex(i)
+		if ret != nvml.SUCCESS {
+			klog.Fatalf("Failed to get device handle by index %d: %s", i, nvmllib.ErrorString(ret))
+		}
+
+		uuid, ret := device.GetUUID()
+		if ret != nvml.SUCCESS {
+			klog.Fatalf("Failed to get device uuid: %s", nvmllib.ErrorString(ret))
+		}
+
+		id := uint(i)
+		deviceByIndex[id] = uuid
 		// TODO: Do we assume all cards are of same capacity
 		if GetGPUMemory() == uint(0) {
-			SetGPUMemory(uint(*d.Memory))
+			memory, ret := device.GetMemoryInfo()
+			if ret != nvml.SUCCESS {
+				// for dgx-spark GB10 is unified memory https://www.nvidia.com/en-us/products/workstations/dgx-spark/
+				if value := os.Getenv("UNIFIED_MEMORY"); value == "true" {
+					systemMemory, err := GetHostMemory()
+					if err != nil {
+						klog.Fatalf("Failed to get host memory err: %v", err)
+					}
+
+					SetGPUMemory(uint(systemMemory / (1024 * 1024))) // MiB
+				} else {
+					klog.Fatalf("Failed to get device memory info: %s", nvmllib.ErrorString(ret))
+				}
+			} else {
+				SetGPUMemory(uint(memory.Total / (1024 * 1024))) // MiB
+			}
 		}
+
 		for j := uint(0); j < GetGPUMemory()/gpuMemoryFactor; j++ {
 			fakeID := GenerateVirtualDeviceID(id, j)
 			virtualDevs = append(virtualDevs, &pluginapi.Device{
