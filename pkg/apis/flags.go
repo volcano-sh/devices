@@ -27,8 +27,8 @@ type Flags struct {
 
 // CommandLineFlags holds the list of command line flags used to configure the device plugin and GFD.
 type CommandLineFlags struct {
-	GPUStrategy     string `json:"GPUStrategy"                yaml:"GPUStrategy"`
-	GPUMemoryFactor uint   `json:"GPUMemoryFactor"                yaml:"GPUMemoryFactor"`
+	GPUStrategy     string `json:"GPUStrategy,omitempty"        yaml:"GPUStrategy,omitempty"`
+	GPUMemoryFactor uint   `json:"GPUMemoryFactor,omitempty"    yaml:"GPUMemoryFactor,omitempty"`
 }
 
 func NewCommandLineFlags(c *cli.Context) *CommandLineFlags {

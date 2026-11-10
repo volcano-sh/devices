@@ -83,9 +83,15 @@ spec:
       serviceAccount: volcano-device-plugin
       containers:
       - image: volcanosh/volcano-device-plugin:latest
+        name: volcano-device-plugin
+        # Optional: configure GPU strategy and memory factor via command-line args:
         #args: ["--gpu-strategy=number"]
         #args: ["--gpu-strategy=share", "--gpu-memory-factor=1"]
-        name: volcano-device-plugin
+        # Or alternatively configure via environment variables (GPU_STRATEGY, GPU_MEMORY_FACTOR):
+        #  - name: GPU_STRATEGY
+        #    value: "share"
+        #  - name: GPU_MEMORY_FACTOR
+        #    value: "1"
         env:
           - name: NODE_NAME
             valueFrom:
