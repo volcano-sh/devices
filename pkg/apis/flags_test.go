@@ -48,6 +48,18 @@ func TestUnmarshalFlags(t *testing.T) {
 				},
 			},
 		},
+		{
+			input: `{
+				"GPUStrategy": "share",
+				"GPUMemoryFactor": 10
+			}`,
+			output: Flags{
+				&CommandLineFlags{
+					GPUStrategy:     "share",
+					GPUMemoryFactor: 10,
+				},
+			},
+		},
 	}
 
 	for i, tc := range testCases {
@@ -78,6 +90,18 @@ func TestMarshalFlags(t *testing.T) {
 			},
 			output: `{
 				"GPUStrategy": "number"
+			}`,
+		},
+		{
+			input: Flags{
+				&CommandLineFlags{
+					GPUStrategy:     "share",
+					GPUMemoryFactor: 10,
+				},
+			},
+			output: `{
+				"GPUStrategy": "share",
+				"GPUMemoryFactor": 10
 			}`,
 		},
 	}
